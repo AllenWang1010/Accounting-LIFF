@@ -167,7 +167,6 @@ async function main() {
     }
 
     records = await res.json();
-    records = JSON.stringify(records);
     initMonthPicker();
     initUI();
     apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
@@ -353,3 +352,4 @@ function updateDetails(data) {
 
 main();
 // loadData();
+
