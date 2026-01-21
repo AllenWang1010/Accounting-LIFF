@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <body>
+    <h2>查詢結果</h2>
+    <div id="result"></div>
+
+    <script>
+      fetch(
+        "https://dalene-phylar-ruttily.ngrok-free.dev/webhook-test/get-data",
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          const list = res.data || [];
+          const el = document.getElementById("result");
+
+          if (list.length === 0) {
+            el.innerHTML = "<p>沒有資料</p>";
+            return;
+          }
+
+          el.innerHTML = list
+            .map((d) => `<p>${d.name}：${d.score}</p>`)
+            .join("");
+        })
+        .catch((err) => {
+          document.getElementById("result").textContent = err.toString();
+        });
+    </script>
+  </body>
+</html>
+<!-- https://dalene-phylar-ruttily.ngrok-free.dev/webhook/b9042fc7-8aaf-46b1-9154-24375a6d1b2d -->
