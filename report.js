@@ -167,9 +167,10 @@ async function main() {
     }
 
     records = await res.json();
+
+    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
     initMonthPicker();
     initUI();
-    apiEl.textContent = `n8n 回應：${JSON.stringify(data)}`;
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("status");
