@@ -170,7 +170,7 @@ async function main() {
     console.log("Records from n8n:", records);
     apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
     initMonthPicker();
-    initUI();
+    // initUI();
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("status");
@@ -353,4 +353,5 @@ function updateDetails(data) {
 
 main();
 // loadData();
+
 
