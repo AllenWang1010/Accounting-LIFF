@@ -2,6 +2,7 @@ const liffId = "2008940948-Zs6T1r82"; // 在 LINE Developers 拿到後貼進來
 const apiUrl =
   "https://dalene-phylar-ruttily.ngrok-free.dev/webhook/reports-demo";
 
+let records = [];
 let chartInstance = null;
 
 const START_YEAR = 1911;
@@ -166,10 +167,10 @@ async function main() {
     }
 
     records = await res.json();
-    console.log("Records from n8n:", records);
-    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
+    records = JSON.stringify(records);
     initMonthPicker();
     initUI();
+    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("status");
