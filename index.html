@@ -6,6 +6,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
+    <div id="status">Loading...</div>
+    <div id="user"></div>
+    <div id="api-result">尚未載入報表資料。</div>
     <div class="app">
       <div class="app-title">記帳分析儀表板</div>
 
@@ -70,9 +73,9 @@
       </section>
     </div>
     <!-- LIFF SDK -->
-    <!-- <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script> -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <!-- 你的主程式 -->
-    <!-- <script src="report.js"></script> -->
+    <script src="./report.js"></script>
     <style>
       *,
       *::before,
