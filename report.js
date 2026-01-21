@@ -168,9 +168,9 @@ async function main() {
 
     records = await res.json();
     console.log(JSON.stringify(records));
+    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
     initMonthPicker();
     initUI();
-    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("status");
@@ -353,5 +353,6 @@ function updateDetails(data) {
 
 main();
 // loadData();
+
 
 
