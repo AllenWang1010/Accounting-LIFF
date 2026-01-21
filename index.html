@@ -1,31 +1,377 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <title>記帳甜甜圈分析</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
   <body>
-    <h2>查詢結果</h2>
-    <div id="result"></div>
+    <div class="app">
+      <div class="app-title">記帳分析儀表板</div>
+
+      <!-- 1. 月份選單：類似圖片的年月選擇器 -->
+      <section>
+        <div class="month-picker card">
+          <!-- 已選月份顯示列 -->
+          <div class="month-display" id="monthDisplay">
+            <span id="monthDisplayText"></span>
+            <button class="icon-btn" id="monthToggleBtn" aria-label="選擇月份">
+              ▾
+            </button>
+          </div>
+
+          <!-- 展開後的月份選擇面板 -->
+          <div class="month-panel" id="monthPanel">
+            <div class="panel-header">
+              <button class="nav-btn" id="yearPrevBtn" aria-label="上一年">
+                ‹
+              </button>
+              <span id="yearLabel"></span>
+              <button class="nav-btn" id="yearNextBtn" aria-label="下一年">
+                ›
+              </button>
+            </div>
+            <div class="month-grid" id="monthGrid">
+              <!-- JS 產生 1~12 月按鈕 -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 帳本總覽 + 帳本選單 -->
+      <section>
+        <div class="card" id="summaryCard">
+          <div class="summary-header">
+            <span>月結餘 (NT$)</span>
+            <select id="ledgerSelect" class="ledger-select"></select>
+          </div>
+          <div class="summary-amount" id="monthBalance">0</div>
+          <div class="summary-sub">
+            <span>月支出<strong id="monthOut">0</strong></span>
+            <span>月收入<strong id="monthIn">0</strong></span>
+          </div>
+          <div class="hint" id="summaryHint">尚未選擇月份</div>
+        </div>
+      </section>
+
+      <!-- 3. 帳本甜甜圈分析圖 -->
+      <section>
+        <div class="card chart-card">
+          <div class="chart-title" id="chartTitle">帳本支出分析</div>
+          <div class="chart-wrapper">
+            <canvas id="doughnutChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 帳本明細 -->
+      <section>
+        <div class="detail-list" id="detailList"></div>
+      </section>
+    </div>
 
     <script>
-      fetch(
-        "https://dalene-phylar-ruttily.ngrok-free.dev/webhook-test/get-data",
-      )
-        .then((res) => res.json())
-        .then((res) => {
-          const list = res.data || [];
-          const el = document.getElementById("result");
+      const DATA_URL = "data.json"; // 請放在同資料夾，欄位：date/ledger/category/amount/note
 
-          if (list.length === 0) {
-            el.innerHTML = "<p>沒有資料</p>";
+      let records = [];
+      let chartInstance = null;
+
+      const START_YEAR = 1911;
+      const now = new Date();
+      const CURRENT_YEAR = now.getFullYear();
+      const CURRENT_MONTH = now.getMonth() + 1; // 1-12
+
+      let selectedYear = CURRENT_YEAR;
+      let selectedMonth = CURRENT_MONTH; // 1-12
+
+      // ---- 月份選擇器 UI ----
+      function initMonthPicker() {
+        const yearLabel = document.getElementById("yearLabel");
+        const monthGrid = document.getElementById("monthGrid");
+        const monthDisplayText = document.getElementById("monthDisplayText");
+        const monthPanel = document.getElementById("monthPanel");
+        const monthToggleBtn = document.getElementById("monthToggleBtn");
+        const yearPrevBtn = document.getElementById("yearPrevBtn");
+        const yearNextBtn = document.getElementById("yearNextBtn");
+
+        // 產生 12 個月份按鈕
+        monthGrid.innerHTML = "";
+        for (let m = 1; m <= 12; m++) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "month-btn";
+          btn.dataset.month = m;
+          btn.textContent = m + "月";
+          monthGrid.appendChild(btn);
+        }
+
+        function updateYearLabel() {
+          yearLabel.textContent = selectedYear;
+        }
+
+        function updateMonthHighlight() {
+          const buttons = monthGrid.querySelectorAll(".month-btn");
+          buttons.forEach((btn) => {
+            const m = Number(btn.dataset.month);
+            btn.classList.toggle(
+              "active",
+              m === selectedMonth && selectedYear === getSelectedYear()
+            );
+          });
+        }
+
+        function getSelectedYear() {
+          return selectedYear;
+        }
+
+        function updateDisplayText() {
+          monthDisplayText.textContent =
+            selectedYear + " 年 " + selectedMonth + " 月";
+        }
+
+        // 點按展開/收起
+        monthToggleBtn.addEventListener("click", () => {
+          monthPanel.classList.toggle("open");
+        });
+
+        // 年份導航
+        yearPrevBtn.addEventListener("click", () => {
+          if (selectedYear > START_YEAR) {
+            selectedYear--;
+            updateYearLabel();
+            updateMonthHighlight();
+          }
+        });
+
+        yearNextBtn.addEventListener("click", () => {
+          if (selectedYear < CURRENT_YEAR) {
+            selectedYear++;
+            updateYearLabel();
+            updateMonthHighlight();
+          }
+        });
+
+        // 點選月份
+        monthGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest(".month-btn");
+          if (!btn) return;
+          const m = Number(btn.dataset.month);
+
+          // 若是未來年月就不給選
+          if (
+            selectedYear > CURRENT_YEAR ||
+            (selectedYear === CURRENT_YEAR && m > CURRENT_MONTH)
+          ) {
             return;
           }
 
-          el.innerHTML = list
-            .map((d) => `<p>${d.name}：${d.score}</p>`)
-            .join("");
-        })
-        .catch((err) => {
-          document.getElementById("result").textContent = err.toString();
+          selectedMonth = m;
+          updateMonthHighlight();
+          updateDisplayText();
+          monthPanel.classList.remove("open");
+          updateLedgerOptions();
         });
+
+        // 初始化
+        updateYearLabel();
+        updateDisplayText();
+        updateMonthHighlight();
+
+        // 若點擊外面關閉面板
+        document.addEventListener("click", (e) => {
+          const picker = document.querySelector(".month-picker");
+          if (!picker.contains(e.target)) {
+            monthPanel.classList.remove("open");
+          }
+        });
+      }
+
+      function getSelectedMonthValue() {
+        // 回傳 YYYY-MM 字串
+        const ym = selectedYear + "-" + String(selectedMonth).padStart(2, "0");
+        return ym;
+      }
+
+      // ---- 資料載入與主流程 ----
+      async function loadData() {
+        const res = await fetch(DATA_URL);
+        records = await res.json();
+        initMonthPicker();
+        initUI();
+      }
+
+      function initUI() {
+        // 不再使用原本的 select#monthSelect，只用自訂月份選擇器
+        updateLedgerOptions();
+      }
+
+      // 根據選到的年月，算出有哪些帳本
+      function updateLedgerOptions() {
+        const ym = getSelectedMonthValue();
+        const ledgerSelect = document.getElementById("ledgerSelect");
+
+        const monthRecords = records.filter((r) => r.date.startsWith(ym));
+        const ledgers = Array.from(new Set(monthRecords.map((r) => r.ledger)));
+
+        ledgerSelect.innerHTML = "";
+
+        if (ledgers.length === 0) {
+          document.getElementById("monthBalance").textContent = 0;
+          document.getElementById("monthOut").textContent = 0;
+          document.getElementById("monthIn").textContent = 0;
+          document.getElementById("summaryHint").textContent = `${ym} 無紀錄`;
+          document.getElementById("detailList").innerHTML = "";
+          if (chartInstance) chartInstance.destroy();
+          document.getElementById("chartTitle").textContent = "帳本支出分析";
+          return;
+        }
+
+        ledgers.forEach((l) => {
+          const opt = document.createElement("option");
+          opt.value = l;
+          opt.textContent = l;
+          ledgerSelect.appendChild(opt);
+        });
+
+        ledgerSelect.removeEventListener("change", updateView);
+        ledgerSelect.addEventListener("change", updateView);
+        ledgerSelect.value = ledgers[0];
+        updateView();
+      }
+
+      function updateView() {
+        const ym = getSelectedMonthValue();
+        const ledger = document.getElementById("ledgerSelect").value;
+
+        const data = records.filter(
+          (r) => r.date.startsWith(ym) && r.ledger === ledger
+        );
+
+        updateSummary(data, ym, ledger);
+        updateChart(data, ledger);
+        updateDetails(data);
+      }
+
+      function updateSummary(data, ym, ledger) {
+        let income = 0,
+          expense = 0;
+        data.forEach((r) => {
+          const amt = Number(r.amount);
+          if (amt > 0) income += amt;
+          else expense += Math.abs(amt);
+        });
+
+        document.getElementById("monthIn").textContent = income;
+        document.getElementById("monthOut").textContent = expense;
+        document.getElementById("monthBalance").textContent = income - expense;
+        document.getElementById(
+          "summaryHint"
+        ).textContent = `${ym}・${ledger} 帳本`;
+      }
+
+      function updateChart(data, ledger) {
+        const categoryTotals = {};
+        data.forEach((r) => {
+          const amt = Number(r.amount);
+          if (amt < 0) {
+            const key = r.category || "未分類";
+            categoryTotals[key] = (categoryTotals[key] || 0) + Math.abs(amt);
+          }
+        });
+
+        const labels = Object.keys(categoryTotals);
+        const values = Object.values(categoryTotals);
+
+        const ctx = document.getElementById("doughnutChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets: [
+              {
+                data: values,
+                backgroundColor: [
+                  "#22c55e",
+                  "#0ea5e9",
+                  "#f97316",
+                  "#e11d48",
+                  "#8b5cf6",
+                  "#14b8a6",
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "70%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: "#334155",
+                  boxWidth: 10,
+                  font: { size: 11 },
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.label}: ${ctx.parsed} 元`,
+                },
+              },
+            },
+          },
+        });
+
+        document.getElementById(
+          "chartTitle"
+        ).textContent = `${ledger} 帳本支出分析`;
+      }
+
+      function updateDetails(data) {
+        const list = document.getElementById("detailList");
+        list.innerHTML = "";
+
+        const sorted = [...data].sort((a, b) => b.date.localeCompare(a.date));
+
+        sorted.forEach((r) => {
+          const wrap = document.createElement("div");
+          wrap.className = "detail-item";
+
+          const main = document.createElement("div");
+          main.className = "detail-main";
+
+          const date = document.createElement("div");
+          date.className = "detail-date";
+          date.textContent = r.date;
+
+          const tag = document.createElement("div");
+          tag.className = "detail-tag";
+          tag.textContent = r.category || "未分類";
+
+          const note = document.createElement("div");
+          note.className = "detail-note";
+          note.textContent = r.note || "";
+
+          main.appendChild(date);
+          main.appendChild(tag);
+          if (note.textContent) main.appendChild(note);
+
+          const amt = document.createElement("div");
+          amt.className = "detail-amount";
+          amt.textContent = Number(r.amount) > 0 ? `+${r.amount}` : r.amount;
+
+          wrap.appendChild(main);
+          wrap.appendChild(amt);
+          list.appendChild(wrap);
+        });
+      }
+
+      loadData();
     </script>
   </body>
 </html>
-<!-- https://dalene-phylar-ruttily.ngrok-free.dev/webhook/b9042fc7-8aaf-46b1-9154-24375a6d1b2d -->
