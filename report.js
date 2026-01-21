@@ -165,8 +165,9 @@ async function main() {
       return;
     }
 
-    records = await res.json();
-    console.log("Records loaded:", JSON.stringify(records.records));
+    data = await res.json();
+    records = data.records;
+    // console.log("Records loaded:", JSON.stringify(records.records));
     initMonthPicker();
     initUI();
     apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
@@ -352,5 +353,6 @@ function updateDetails(data) {
 
 main();
 // loadData();
+
 
 
