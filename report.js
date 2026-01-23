@@ -123,30 +123,19 @@ function getSelectedMonthValue() {
 // ---- 資料載入與主流程 ----
 async function main() {
   try {
-    const statusEl = document.getElementById("status");
-    const userEl = document.getElementById("user");
-    const apiEl = document.getElementById("api-result");
-
-    statusEl.textContent = "Initializing LIFF...";
-
     // 初始化 LIFF
     await liff.init({ liffId });
 
     // 確保登入
     if (!liff.isLoggedIn()) {
-      statusEl.textContent = "Not logged in, redirecting to login...";
       liff.login();
       return;
     }
 
-    statusEl.textContent = "LIFF initialized.";
-
     // 取得使用者資訊（之後也可以把 userId 傳給 n8n 用來做個人化查詢）
     const profile = await liff.getProfile();
-    userEl.textContent = `Hello, ${profile.displayName}！`;
 
     // 呼叫 n8n 的報表 API
-    apiEl.textContent = "Loading report from n8n...";
 
     const res = await fetch(apiUrl, {
       method: "POST",
@@ -161,20 +150,16 @@ async function main() {
     });
 
     if (!res.ok) {
-      apiEl.textContent = `n8n API error: ${res.status} ${res.statusText}`;
+      console.log(`n8n API error: ${res.status} ${res.statusText}`);
       return;
     }
 
     data = await res.json();
-    records = data.records;
-    // console.log("Records loaded:", JSON.stringify(records.records));
+    records = data.records; // 假設 API 回傳的 JSON 裡有個 records 陣列
     initMonthPicker();
     initUI();
-    apiEl.textContent = `n8n 回應：${JSON.stringify(records)}`;
   } catch (err) {
     console.error(err);
-    const statusEl = document.getElementById("status");
-    statusEl.textContent = "發生錯誤：" + err;
   }
 }
 
@@ -353,6 +338,3 @@ function updateDetails(data) {
 
 main();
 // loadData();
-
-
-
