@@ -223,6 +223,7 @@ function updateView() {
 }
 
 function updateSummary(data, ym, ledger) {
+  console.log(data);
   let income = 0,
     expense = 0;
   data.forEach((r) => {
