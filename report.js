@@ -155,6 +155,7 @@ async function main() {
     }
 
     data = await res.json();
+    console.log("Fetched data:", data);
     records = data.records; // 假設 API 回傳的 JSON 裡有個 records 陣列
     initMonthPicker();
     initUI();
@@ -223,7 +224,6 @@ function updateView() {
 }
 
 function updateSummary(data, ym, ledger) {
-  console.log(data);
   let income = 0,
     expense = 0;
   data.forEach((r) => {
