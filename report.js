@@ -153,11 +153,10 @@ async function main() {
       console.log(`n8n API error: ${res.status} ${res.statusText}`);
       return;
     }
-
+    const apiEl = document.getElementById("api-result");
+    apiEl.textContent = "n8n API error";
     data = await res.json();
     records = data.records; // 假設 API 回傳的 JSON 裡有個 records 陣列
-    console.log('ok')
-    console.log(records)
     initMonthPicker();
     initUI();
   } catch (err) {
@@ -340,5 +339,3 @@ function updateDetails(data) {
 
 main();
 // loadData();
-
-
